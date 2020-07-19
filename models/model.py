@@ -4,9 +4,11 @@ import time
 import random
 import datetime
 import scipy.misc
+import imageio
+import skimage.transform
 import numpy as np
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
+import tf_slim as slim
 from datetime import datetime
 from util.util import *
 from util.BasicConvLSTMCell import *
@@ -276,7 +278,8 @@ class DEBLUR(object):
         self.load(sess, self.train_dir, step=523000)
 
         for imgName in imgsName:
-            blur = scipy.misc.imread(os.path.join(input_path, imgName))
+            print(os.path.join(input_path, imgName) + '!!!!!')
+            blur = imageio.imread(os.path.join(input_path, imgName))
             h, w, c = blur.shape
             # make sure the width is larger than the height
             rot = False
@@ -290,7 +293,8 @@ class DEBLUR(object):
                 scale = min(1.0 * H / h, 1.0 * W / w)
                 new_h = int(h * scale)
                 new_w = int(w * scale)
-                blur = scipy.misc.imresize(blur, [new_h, new_w], 'bicubic')
+                # blur = scipy.misc.imresize(blur, [new_h, new_w], 'bicubic')
+                blur = skimage.transform.resize(blur, [new_h, new_w], order=3)
                 resize = True
                 blurPad = np.pad(blur, ((0, H - new_h), (0, W - new_w), (0, 0)), 'edge')
             else:
@@ -310,10 +314,12 @@ class DEBLUR(object):
             # crop the image into original size
             if resize:
                 res = res[:new_h, :new_w, :]
-                res = scipy.misc.imresize(res, [h, w], 'bicubic')
+                res = skimage.transform.resize(res, [h, w], order=3)
+                # res = scipy.misc.imresize(res, [h, w], 'bicubic')
             else:
                 res = res[:h, :w, :]
 
             if rot:
                 res = np.transpose(res, [1, 0, 2])
-            scipy.misc.imsave(os.path.join(output_path, imgName), res)
+            # scipy.misc.imsave(os.path.join(output_path, imgName), res)
+            imageio.imwrite(os.path.join(output_path, imgName), res)
